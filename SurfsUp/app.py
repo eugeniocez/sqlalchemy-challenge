@@ -27,10 +27,38 @@ session = Session(engine)
 #################################################
 # Flask Setup
 #################################################
-
-
-
+app = Flask(__name__)
 
 #################################################
 # Flask Routes
 #################################################
+@app.route("/")
+def welcome():
+
+    '''List all available API routes'''
+    return ("""
+    <h1>Climate App</h1>
+    <h3>Available Routes:</h3>
+    <ul>
+        <li><a href="/api/v1.0/precipitation">/api/v1.0/precipitation</a></li>
+        <li><a href="/api/v1.0/stations">/api/v1.0/stations</a></li>
+        <li><a href="/api/v1.0/tobs">/api/v1.0/tobs</a></li>
+        <li>/api/v1.0/&lt;start&gt;</li>
+        <li>/api/v1.0/&lt;start&gt;/&lt;end&gt;</li>
+    </ul>
+    """)
+
+@app.route("/api/v1.0/precipitation")
+def precipitation():
+
+    with Session(engine) as session:
+
+        most_recent_date = session.query(func.max(Measurement.date)).scalar()
+
+        lastdate_in_dataset = dt.datetime.strptime(most_recent_date, '%Y-%m-%d')
+        one_year_ago_date = lastdate_in_dataset - dt.timedelta(days = 366)
+
+        result = session.query(Measurement.date, Measurement.prcp).filter(Measurement.date >= one_year_ago_date).all()
+        precipitation_data = {row.date: row.prcp for row in result}
+
+    return jsonify(precipitation_data)
